@@ -13,6 +13,8 @@ sys.path.append(PROJECT_ROOT)
 
 from agent.collector import collect_snapshot
 from database.database import initialize_database, save_snapshot
+from database.queries import get_latest_snapshots
+from dna.change_detector import detect_changes
 
 
 print("===== INFRAFORENSICS PIPELINE =====")
@@ -30,7 +32,7 @@ print("Database ready.")
 
 
 # --------------------------------------------------
-# STEP 2: Collect system snapshot
+# STEP 2: Collect current system snapshot
 # --------------------------------------------------
 
 print("\n[2] Collecting system snapshot...")
@@ -44,21 +46,58 @@ print("Snapshot collected.")
 # STEP 3: Save snapshot
 # --------------------------------------------------
 
-print("\n[3] Saving snapshot to database...")
+print("\n[3] Saving snapshot...")
 
 save_snapshot(snapshot)
 
-print("Snapshot saved successfully.")
+print("Snapshot saved.")
 
 
 # --------------------------------------------------
-# Display snapshot
+# STEP 4: Load historical snapshots
 # --------------------------------------------------
 
-print("\n===== CURRENT INFRASTRUCTURE STATE =====")
+print("\n[4] Loading historical snapshots...")
 
-for key, value in snapshot.items():
-    print(f"{key}: {value}")
+snapshots = get_latest_snapshots()
+
+print(f"Snapshots available: {len(snapshots)}")
 
 
-print("\n===== PIPELINE STEP 2 COMPLETED =====")
+# --------------------------------------------------
+# STEP 5: Detect changes
+# --------------------------------------------------
+
+print("\n[5] Detecting changes...")
+
+if len(snapshots) >= 2:
+
+    before = snapshots[-2]
+    after = snapshots[-1]
+
+    changes = detect_changes(before, after)
+
+    if changes:
+
+        print("\n===== CHANGES DETECTED =====")
+
+        for field, old_value, new_value in changes:
+
+            print(
+                f"{field}: "
+                f"{old_value} -> {new_value}"
+            )
+
+    else:
+
+        print("No changes detected.")
+
+else:
+
+    print(
+        "Not enough snapshots "
+        "for change detection."
+    )
+
+
+print("\n===== PIPELINE COMPLETED =====")

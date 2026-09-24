@@ -1,38 +1,5 @@
-import sqlite3
-
-
-DATABASE_NAME = "infraforensics.db"
-
-
-def get_last_two_snapshots():
-    connection = sqlite3.connect(DATABASE_NAME)
-    connection.row_factory = sqlite3.Row
-
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        SELECT
-            id,
-            timestamp,
-            hostname,
-            cpu_percent,
-            memory_percent,
-            disk_percent,
-            process_count
-        FROM system_snapshots
-        ORDER BY id DESC
-        LIMIT 2
-    """)
-
-    snapshots = cursor.fetchall()
-
-    connection.close()
-
-    return snapshots
-
-
-def compare_snapshots(previous, current):
-    changes = {}
+def detect_changes(before, after):
+    changes = []
 
     fields = [
         "cpu_percent",
@@ -42,41 +9,44 @@ def compare_snapshots(previous, current):
     ]
 
     for field in fields:
-        old_value = previous[field]
-        new_value = current[field]
+
+        old_value = before[field]
+        new_value = after[field]
 
         if old_value != new_value:
-            changes[field] = {
-                "before": old_value,
-                "after": new_value
-            }
+            changes.append(
+                (
+                    field,
+                    old_value,
+                    new_value
+                )
+            )
 
     return changes
 
 
 if __name__ == "__main__":
 
-    snapshots = get_last_two_snapshots()
+    print("===== INFRAFORENSICS CHANGE DETECTOR =====")
 
-    if len(snapshots) < 2:
-        print("At least two snapshots are required.")
-    else:
-        previous = snapshots[1]
-        current = snapshots[0]
+    before = {
+        "cpu_percent": 20,
+        "memory_percent": 60,
+        "disk_percent": 50,
+        "process_count": 200
+    }
 
-        changes = compare_snapshots(previous, current)
+    after = {
+        "cpu_percent": 70,
+        "memory_percent": 75,
+        "disk_percent": 65,
+        "process_count": 270
+    }
 
-        print("===== INFRAFORENSICS CHANGE DETECTION =====")
-        print()
+    changes = detect_changes(before, after)
 
-        if not changes:
-            print("No infrastructure changes detected.")
-        else:
-            print("Infrastructure changes detected:")
-            print()
-
-            for field, change in changes.items():
-                print(
-                    f"{field}: "
-                    f"{change['before']} → {change['after']}"
-                )
+    for field, old_value, new_value in changes:
+        print(
+            f"{field}: "
+            f"{old_value} -> {new_value}"
+        )
