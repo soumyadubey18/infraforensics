@@ -3,8 +3,8 @@ import socket
 from datetime import datetime
 
 
-def collect_system_health():
-    health = {
+def collect_snapshot():
+    snapshot = {
         "timestamp": datetime.now().isoformat(),
         "hostname": socket.gethostname(),
         "cpu_percent": psutil.cpu_percent(interval=1),
@@ -13,16 +13,14 @@ def collect_system_health():
         "process_count": len(psutil.pids())
     }
 
-    return health
+    return snapshot
 
 
 if __name__ == "__main__":
-    data = collect_system_health()
 
-    print("===== INFRAFORENSICS SYSTEM HEALTH =====")
-    print(f"Timestamp      : {data['timestamp']}")
-    print(f"Hostname       : {data['hostname']}")
-    print(f"CPU Usage      : {data['cpu_percent']}%")
-    print(f"Memory Usage   : {data['memory_percent']}%")
-    print(f"Disk Usage     : {data['disk_percent']}%")
-    print(f"Process Count  : {data['process_count']}")
+    print("===== INFRAFORENSICS SYSTEM SNAPSHOT =====")
+
+    snapshot = collect_snapshot()
+
+    for key, value in snapshot.items():
+        print(f"{key}: {value}")
