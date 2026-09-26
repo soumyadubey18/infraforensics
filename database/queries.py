@@ -1,13 +1,11 @@
 import sqlite3
 import os
 
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "infraforensics.db")
 
 
 def get_latest_snapshots(limit=2):
-
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
 
@@ -21,7 +19,8 @@ def get_latest_snapshots(limit=2):
             cpu_percent,
             memory_percent,
             disk_percent,
-            process_count
+            process_count,
+            infrastructure_dna
         FROM snapshots
         ORDER BY id DESC
         LIMIT ?
@@ -31,7 +30,6 @@ def get_latest_snapshots(limit=2):
 
     connection.close()
 
-    # Return oldest → newest
     return list(reversed(rows))
 
 

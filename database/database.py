@@ -1,7 +1,6 @@
 import sqlite3
 import os
 
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "infraforensics.db")
 
@@ -11,7 +10,6 @@ def get_connection():
 
 
 def initialize_database():
-
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -23,7 +21,8 @@ def initialize_database():
             cpu_percent REAL,
             memory_percent REAL,
             disk_percent REAL,
-            process_count INTEGER
+            process_count INTEGER,
+            infrastructure_dna TEXT
         )
     """)
 
@@ -31,8 +30,7 @@ def initialize_database():
     connection.close()
 
 
-def save_snapshot(snapshot):
-
+def save_snapshot(snapshot, infrastructure_dna=None):
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -43,16 +41,18 @@ def save_snapshot(snapshot):
             cpu_percent,
             memory_percent,
             disk_percent,
-            process_count
+            process_count,
+            infrastructure_dna
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
         snapshot["timestamp"],
         snapshot["hostname"],
         snapshot["cpu_percent"],
         snapshot["memory_percent"],
         snapshot["disk_percent"],
-        snapshot["process_count"]
+        snapshot["process_count"],
+        infrastructure_dna
     ))
 
     connection.commit()
@@ -60,7 +60,5 @@ def save_snapshot(snapshot):
 
 
 if __name__ == "__main__":
-
     initialize_database()
-
     print("Database initialized successfully.")

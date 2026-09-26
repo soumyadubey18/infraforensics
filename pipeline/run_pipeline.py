@@ -3,29 +3,41 @@ import os
 import hashlib
 import json
 
-# Find the project root directory
 PROJECT_ROOT = os.path.dirname(
     os.path.dirname(
         os.path.abspath(__file__)
     )
 )
 
-# Add project root to Python path
 sys.path.append(PROJECT_ROOT)
 
-# Import project modules
+
 from agent.collector import collect_snapshot
-from database.database import initialize_database, save_snapshot
-from database.queries import get_latest_snapshots
-from dna.change_detector import detect_changes
-from dna.change_classifier import classify_change
+
+from database.database import (
+    initialize_database,
+    save_snapshot
+)
+
+from database.queries import (
+    get_latest_snapshots
+)
+
+from dna.change_detector import (
+    detect_changes,
+    compare_infrastructure_dna
+)
+
+from dna.change_classifier import (
+    classify_change
+)
 
 
 print("===== INFRAFORENSICS PIPELINE =====")
 
 
 # --------------------------------------------------
-# STEP 1: Initialize Database
+# 1. INITIALIZE DATABASE
 # --------------------------------------------------
 
 print("\n[1] Initializing database...")
@@ -36,7 +48,7 @@ print("Database ready.")
 
 
 # --------------------------------------------------
-# STEP 2: Collect Current System Snapshot
+# 2. COLLECT SYSTEM SNAPSHOT
 # --------------------------------------------------
 
 print("\n[2] Collecting system snapshot...")
@@ -45,6 +57,7 @@ snapshot = collect_snapshot()
 
 print("Snapshot collected.")
 
+
 print("\nCurrent snapshot:")
 
 for key, value in snapshot.items():
@@ -52,7 +65,7 @@ for key, value in snapshot.items():
 
 
 # --------------------------------------------------
-# STEP 3: Generate Infrastructure DNA
+# 3. GENERATE INFRASTRUCTURE DNA
 # --------------------------------------------------
 
 print("\n[3] Generating Infrastructure DNA...")
@@ -83,32 +96,37 @@ print(dna)
 
 
 # --------------------------------------------------
-# STEP 4: Save Snapshot
+# 4. SAVE SNAPSHOT + DNA
 # --------------------------------------------------
 
-print("\n[4] Saving snapshot...")
+print("\n[4] Saving snapshot and DNA...")
 
-save_snapshot(snapshot)
+save_snapshot(
+    snapshot,
+    dna
+)
 
-print("Snapshot saved.")
+print("Snapshot and DNA saved.")
 
 
 # --------------------------------------------------
-# STEP 5: Load Historical Snapshots
+# 5. LOAD HISTORICAL SNAPSHOTS
 # --------------------------------------------------
 
 print("\n[5] Loading historical snapshots...")
 
 snapshots = get_latest_snapshots()
 
-print(f"Snapshots available: {len(snapshots)}")
+print(
+    f"Snapshots available: {len(snapshots)}"
+)
 
 
 # --------------------------------------------------
-# STEP 6: Detect Changes
+# 6. COMPARE INFRASTRUCTURE DNA
 # --------------------------------------------------
 
-print("\n[6] Detecting changes...")
+print("\n[6] Comparing infrastructure state...")
 
 
 if len(snapshots) >= 2:
@@ -117,19 +135,48 @@ if len(snapshots) >= 2:
 
     after = snapshots[-1]
 
+
+    state = compare_infrastructure_dna(
+        before,
+        after
+    )
+
+
+    print("\n===== INFRASTRUCTURE STATE =====")
+
+    print(
+        f"Previous DNA : "
+        f"{before['infrastructure_dna']}"
+    )
+
+    print(
+        f"Current DNA  : "
+        f"{after['infrastructure_dna']}"
+    )
+
+    print(
+        f"State        : "
+        f"{state}"
+    )
+
+
+    # --------------------------------------------------
+    # 7. DETECT METRIC CHANGES
+    # --------------------------------------------------
+
+    print("\n[7] Detecting metric changes...")
+
+
     changes = detect_changes(
         before,
         after
     )
 
 
-    # --------------------------------------------------
-    # STEP 7: Classify Changes
-    # --------------------------------------------------
-
     if changes:
 
         print("\n===== CHANGES DETECTED =====")
+
 
         for field, old_value, new_value in changes:
 
@@ -139,20 +186,25 @@ if len(snapshots) >= 2:
                 new_value
             )
 
+
             print(
                 f"{field}: "
                 f"{old_value} -> {new_value} "
                 f"[{severity}]"
             )
 
+
     else:
 
-        print("No changes detected.")
+        print("No metric changes detected.")
 
 
 else:
 
-    print("Not enough snapshots for change detection.")
+    print(
+        "Not enough snapshots "
+        "for infrastructure comparison."
+    )
 
 
 # --------------------------------------------------
